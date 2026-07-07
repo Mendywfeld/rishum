@@ -220,6 +220,18 @@ const GROUP_KEY = "rishum_group";
 const QUEUE_KEY = "rishum_queue";
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxFgVzKIAAdX5oTRU21KVb1MMdAn_ZuBfV5b9t4PXNSaEMBlwIodN7L6YJ76_n5_U_/exec";
 
+/* ---------- daily reset: every day starts fresh ---------- */
+(function () {
+  const today = new Date().toDateString();
+  const last = localStorage.getItem("rishum_day");
+  if (last && last !== today) {
+    localStorage.removeItem(KIDS_KEY);   // רשימת הילדים נבנית מחדש כל יום
+    localStorage.removeItem(LOG_KEY);    // היומן המקומי מתאפס (הכל שמור בדשבורד)
+    localStorage.removeItem(GROUP_KEY);  // וגם שם הקבוצה
+  }
+  localStorage.setItem("rishum_day", today);
+})();
+
 let kids    = JSON.parse(localStorage.getItem(KIDS_KEY) || "[]");
 let present = new Set();
 let locked  = false; // during celebration

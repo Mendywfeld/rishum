@@ -27,32 +27,35 @@
   #gate input { width: 100%; padding: 12px; border: 2px solid #52aee5; border-radius: 12px; font-size: 1rem; text-align: center; direction: ltr; outline: none; font-family: inherit; }
   #gate button { margin-top: 12px; width: 100%; }
   .btn { background: #1287d8; color: #fff; border: none; padding: 12px 20px; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .btn.small-btn { padding: 8px 16px; font-size: .85rem; }
+  .btn.danger { background: #e8262b; }
   .err { color: #e8262b; font-size: .85rem; margin-top: 10px; display: none; }
 
   /* toolbar */
   .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+  .toolbar .right, .toolbar .left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .toolbar .small { background: none; border: none; color: #1287d8; cursor: pointer; font-family: inherit; font-size: .8rem; text-decoration: underline; }
   #last-refresh { font-size: .75rem; color: #636e72; }
+  select { padding: 8px 10px; border: 2px solid #52aee5; border-radius: 10px; font-family: inherit; font-size: .85rem; background: #fff; color: #0b6bb8; font-weight: 700; }
 
-  /* summary cards */
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
-  .card { background: #fff; border-radius: 16px; padding: 14px; text-align: center; box-shadow: 0 3px 10px rgba(18,135,216,.15); border-top: 4px solid #1287d8; }
-  .card.orange { border-top-color: #f7941d; }
-  .card.red { border-top-color: #e8262b; }
-  .card .num { font-size: 1.9rem; font-weight: 800; color: #0b6bb8; }
-  .card .lbl { font-size: .8rem; color: #636e72; margin-top: 4px; }
+  /* last location card */
+  .loc-card {
+    background: #fff; border-radius: 14px; padding: 12px 16px; margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.07); border-right: 5px solid #f7941d;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: .9rem;
+  }
+  .loc-card a { color: #1287d8; font-weight: 800; text-decoration: none; }
+  .loc-card .muted { color: #636e72; font-size: .8rem; }
 
   h2 { font-size: 1rem; color: #1287d8; margin: 18px 0 10px; }
 
   /* group cards */
   .groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
-  .group-card { background: #fff; border-radius: 14px; padding: 13px 15px; box-shadow: 0 2px 8px rgba(0,0,0,.07); border-right: 5px solid #ccc; }
-  .group-card.today { border-right-color: #1287d8; }
+  .group-card { background: #fff; border-radius: 14px; padding: 13px 15px; box-shadow: 0 2px 8px rgba(0,0,0,.07); border-right: 5px solid #1287d8; }
   .group-card .gname { font-weight: 800; font-size: 1rem; }
   .group-card .gdetail { font-size: .82rem; color: #636e72; margin-top: 5px; line-height: 1.6; }
   .badge { display: inline-block; font-size: .72rem; font-weight: 700; padding: 2px 9px; border-radius: 10px; background: #e5f2fc; color: #1287d8; }
   .badge.missing { background: #ffe3c2; color: #e8262b; }
-  .badge.old { background: #eee; color: #888; }
 
   /* table */
   .tbl-wrap { background: #fff; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.07); overflow-x: auto; }
@@ -62,7 +65,6 @@
   tr:nth-child(even) td { background: #f7fbff; }
   td a { color: #1287d8; text-decoration: none; }
   .miss-cell { color: #e8262b; font-weight: 600; }
-  select { padding: 7px 10px; border: 2px solid #52aee5; border-radius: 10px; font-family: inherit; font-size: .85rem; background: #fff; color: #0b6bb8; }
   .empty { text-align: center; color: #636e72; padding: 36px 10px; line-height: 1.7; }
 </style>
 </head>
@@ -83,32 +85,30 @@
 
   <div id="dash" style="display:none">
     <div class="toolbar">
-      <div>
-        <button class="btn" style="padding:8px 16px;font-size:.85rem" onclick="load()">🔄 רענון</button>
+      <div class="right">
+        <button class="btn small-btn" onclick="load()">🔄 רענון</button>
+        <select id="day-filter" onchange="render()"></select>
+        <select id="group-filter" onchange="render()"><option value="">כל הקבוצות</option></select>
         <span id="last-refresh"></span>
       </div>
-      <div>
-        <select id="group-filter" onchange="render()"><option value="">כל הקבוצות</option></select>
+      <div class="left">
+        <button class="btn small-btn danger" onclick="resetAll()">🗑️ איפוס כל הרישומים</button>
         <button class="small" onclick="logout()">החלפת קוד</button>
       </div>
     </div>
 
-    <div class="cards">
-      <div class="card"><div class="num" id="c-today">–</div><div class="lbl">רישומים היום</div></div>
-      <div class="card orange"><div class="num" id="c-groups">–</div><div class="lbl">קבוצות שדיווחו היום</div></div>
-      <div class="card red"><div class="num" id="c-missing">–</div><div class="lbl">חסרים ברישומי היום</div></div>
-    </div>
+    <div class="loc-card" id="loc-card" style="display:none"></div>
 
-    <h2>סטטוס קבוצות</h2>
+    <h2>סטטוס קבוצות <span id="day-label" style="color:#636e72;font-weight:400;font-size:.85rem"></span></h2>
     <div class="groups" id="groups"></div>
 
-    <h2>כל הרישומים</h2>
+    <h2>הרישומים</h2>
     <div class="tbl-wrap">
       <table>
         <thead><tr><th>תאריך</th><th>שעה</th><th>קבוצה</th><th>נוכחים</th><th>חסרים</th><th>מיקום</th></tr></thead>
         <tbody id="tbody"></tbody>
       </table>
-      <div class="empty" id="empty" style="display:none">עדיין אין רישומים. ברגע שמדריכה תסיים רישום נוכחות — הוא יופיע כאן.</div>
+      <div class="empty" id="empty" style="display:none">אין רישומים ביום שנבחר. ברגע שמדריכה תסיים רישום נוכחות — הוא יופיע כאן.</div>
     </div>
   </div>
 </main>
@@ -131,6 +131,16 @@ function enter() {
 function logout() {
   localStorage.removeItem(KEY_STORE);
   location.reload();
+}
+
+function dayKey(ts) { return new Date(ts).toDateString(); }
+function dayLabel(ts) {
+  const d = new Date(ts);
+  const today = new Date();
+  if (d.toDateString() === today.toDateString()) return "היום";
+  const yest = new Date(today.getTime() - 864e5);
+  if (d.toDateString() === yest.toDateString()) return "אתמול";
+  return d.toLocaleDateString("he-IL", { weekday: "short", day: "2-digit", month: "2-digit" });
 }
 
 async function load() {
@@ -156,6 +166,7 @@ async function load() {
     document.getElementById("dash").style.display = "block";
     document.getElementById("last-refresh").textContent =
       "עודכן: " + new Date().toLocaleTimeString("he-IL", {hour:"2-digit",minute:"2-digit"});
+    buildDayFilter();
     render();
   } catch (e) {
     document.getElementById("gate").style.display = "block";
@@ -164,39 +175,62 @@ async function load() {
   }
 }
 
-function isToday(ts) {
-  return new Date(ts).toDateString() === new Date().toDateString();
+function buildDayFilter() {
+  const sel = document.getElementById("day-filter");
+  const hadOptions = sel.options.length > 0;
+  const cur = sel.value;
+  const todayKey = new Date().toDateString();
+  const keys = [];
+  for (const e of entries) if (!keys.includes(dayKey(e.ts))) keys.push(dayKey(e.ts));
+  if (!keys.includes(todayKey)) keys.unshift(todayKey);
+  sel.innerHTML =
+    keys.map(k => {
+      const ts = new Date(k).getTime();
+      return `<option value="${k}"${k === (cur || todayKey) ? " selected" : ""}>${dayLabel(ts)}</option>`;
+    }).join("") +
+    `<option value=""${cur === "" && sel.innerHTML !== "" ? "" : ""}>כל הימים</option>`;
+  if (hadOptions && cur === "") sel.value = "";
 }
 
 function render() {
-  // group filter options
-  const groups = [...new Set(entries.map(e => e.group))];
-  const sel = document.getElementById("group-filter");
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">כל הקבוצות</option>' +
-    groups.map(g => `<option${g===cur?" selected":""} value="${esc(g)}">${esc(g)}</option>`).join("");
+  const dayVal = document.getElementById("day-filter").value;
+  const dayEntries = dayVal ? entries.filter(e => dayKey(e.ts) === dayVal) : entries;
 
-  const view = cur ? entries.filter(e => e.group === cur) : entries;
+  // group filter options (from selected day's entries)
+  const groups = [...new Set(dayEntries.map(e => e.group))];
+  const gsel = document.getElementById("group-filter");
+  const gcur = gsel.value;
+  gsel.innerHTML = '<option value="">כל הקבוצות</option>' +
+    groups.map(g => `<option${g===gcur?" selected":""} value="${esc(g)}">${esc(g)}</option>`).join("");
 
-  // summary (always across all groups)
-  const today = entries.filter(e => isToday(e.ts));
-  document.getElementById("c-today").textContent = today.length;
-  document.getElementById("c-groups").textContent = new Set(today.map(e => e.group)).size;
-  document.getElementById("c-missing").textContent =
-    today.reduce((s, e) => s + (e.total - e.present), 0);
+  const view = gsel.value ? dayEntries.filter(e => e.group === gsel.value) : dayEntries;
 
-  // group cards — latest entry per group
+  // last reported location (of selected day; falls back to any day)
+  const withLoc = (dayEntries.find(e => e.map) || entries.find(e => e.map));
+  const lc = document.getElementById("loc-card");
+  if (withLoc) {
+    lc.style.display = "flex";
+    lc.innerHTML = `📍 <a href="${esc(withLoc.map)}" target="_blank" rel="noopener">המיקום האחרון שדווח — פתח במפה</a>
+      <span class="muted">${esc(withLoc.group)} · ${esc(withLoc.time).slice(0,5)} · ${esc(withLoc.date)}</span>`;
+  } else {
+    lc.style.display = "none";
+  }
+
+  // day label next to group status
+  document.getElementById("day-label").textContent = dayVal ? "· " + dayLabel(new Date(dayVal).getTime()) : "· כל הימים";
+
+  // group cards — latest entry per group within the selected day
   const latest = {};
-  for (const e of entries) if (!latest[e.group]) latest[e.group] = e; // entries sorted desc
+  for (const e of dayEntries) if (!latest[e.group]) latest[e.group] = e; // sorted desc
   document.getElementById("groups").innerHTML = Object.values(latest).map(e => `
-    <div class="group-card${isToday(e.ts) ? " today" : ""}">
+    <div class="group-card">
       <div class="gname">${esc(e.group)}</div>
       <div class="gdetail">
-        ${isToday(e.ts) ? `<span class="badge">היום ${esc(e.time).slice(0,5)}</span>` : `<span class="badge old">${esc(e.date)}</span>`}
+        <span class="badge">${esc(e.time).slice(0,5)}</span>
         <span class="badge${e.total - e.present ? " missing" : ""}">${e.present}/${e.total} נוכחים</span>
         ${e.missing ? `<br>חסרים: <b>${esc(e.missing)}</b>` : ""}
       </div>
-    </div>`).join("") || '<div class="empty">אין נתונים עדיין</div>';
+    </div>`).join("") || '<div class="empty">עדיין לא התקבלו רישומים ביום זה</div>';
 
   // table
   const tb = document.getElementById("tbody");
@@ -210,6 +244,20 @@ function render() {
       <td>${e.map ? `<a href="${esc(e.map)}" target="_blank" rel="noopener">📍 מפה</a>` : "—"}</td>
     </tr>`).join("");
   document.getElementById("empty").style.display = view.length ? "none" : "block";
+}
+
+async function resetAll() {
+  if (!confirm("לאפס את כל הרישומים מכל הימים ומכל הקבוצות? פעולה זו מוחקת הכל מהגיליון ואינה הפיכה.")) return;
+  if (!confirm("בטוח? כל היסטוריית הנוכחות תימחק לצמיתות.")) return;
+  try {
+    const r = await fetch(SCRIPT_URL + "?key=" + encodeURIComponent(getKey()) + "&action=clear");
+    const j = await r.json();
+    if (!j.ok) throw new Error();
+    alert("כל הרישומים אופסו ✓");
+    load();
+  } catch (e) {
+    alert("שגיאה באיפוס — נסה שוב.");
+  }
 }
 
 function esc(s) {
